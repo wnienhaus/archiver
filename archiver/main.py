@@ -24,6 +24,7 @@ def main():
 
     # archive scan
     parser_scan = subparsers.add_parser("scan", help="Rebuild database from disk")
+    parser_scan.add_argument("-c", "--continue", dest="resume", action="store_true", help="Continue interrupted scan (skip existing files)")
 
     # archive status
     parser_status = subparsers.add_parser("status", help="Show archive status")
@@ -39,7 +40,7 @@ def main():
         elif args.command == "verify":
             cmd_verify(root_path)
         elif args.command == "scan":
-            cmd_scan(root_path)
+            cmd_scan(root_path, args.resume)
         elif args.command == "status":
             cmd_status(root_path)
     except KeyboardInterrupt:

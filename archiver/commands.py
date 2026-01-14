@@ -205,36 +205,35 @@ def cmd_verify(root_path: Path):
     else:
         print(f"Verification complete: {issues} issues found.")
 
-def cmd_scan(root_path: Path):
+def cmd_scan(root_path: Path, resume: bool = False):
     """Rebuilds the database from disk."""
     db_path = get_db_path(root_path)
     
-    # "Rebuild DB from disk" - implies clearing existing DB or handling conflicts?
-    # Usually "Rebuild" means start fresh or resync.
-    # Given "Database can be deleted and rebuilt" in success criteria, 
-    # we should probably clear and re-populate.
-    
+    existing_paths = set()
+
     if db_path.exists():
-        print("Rebuilding database...")
-        # We can either drop tables or delete file.
-        # Let's drop tables to keep the connection/file handle logic simple if we wanted to reuse,
-        # but deleting the file is cleaner for a full rebuild.
-        # However, we need to respect the spec: "Rebuild DB from disk".
-        # Let's try to update/insert. But "Rebuild" strongly suggests a fresh start for index integrity.
-        # Let's rename the old DB to backup and start new? Or just truncate tables.
-        
         conn = get_connection(db_path)
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM hash_index")
-        cursor.execute("DELETE FROM files")
-        cursor.execute("DELETE FROM sqlite_sequence") # Reset autoincrement
-        conn.commit()
+
+        if resume:
+            print("Resuming database scan...")
+            cursor.execute("SELECT path FROM files")
+            # Load all existing paths into a set for O(1) lookup
+            existing_paths = {row[0] for row in cursor.fetchall()}
+            print(f"Found {len(existing_paths)} existing entries in database.")
+        else:
+            print("Rebuilding database...")
+            cursor.execute("DELETE FROM hash_index")
+            cursor.execute("DELETE FROM files")
+            cursor.execute("DELETE FROM sqlite_sequence") # Reset autoincrement
+            conn.commit()
     else:
         init_db(db_path)
         conn = get_connection(db_path)
         cursor = conn.cursor()
 
     count = 0
+    skipped_count = 0
     # Walk archive excluding .archive-index
     for root, dirs, files in os.walk(root_path):
         # Modify dirs in-place to skip .archive-index
@@ -247,12 +246,18 @@ def cmd_scan(root_path: Path):
             
             try:
                 rel_path = file_path.relative_to(root_path)
+                rel_path_str = str(rel_path)
+
+                if resume and rel_path_str in existing_paths:
+                    skipped_count += 1
+                    continue
+
                 size = file_path.stat().st_size
                 file_hash = calculate_file_hash(file_path)
                 
                 cursor.execute(
                     "INSERT INTO files (path, size, hash) VALUES (?, ?, ?)",
-                    (str(rel_path), size, file_hash)
+                    (rel_path_str, size, file_hash)
                 )
                 file_id = cursor.lastrowid
                 cursor.execute(
@@ -268,7 +273,10 @@ def cmd_scan(root_path: Path):
 
     conn.commit()
     conn.close()
-    print(f"\nScan complete. Indexed {count} files.")
+    if resume:
+        print(f"\nScan complete. Added {count} new files (Skipped {skipped_count} existing).")
+    else:
+        print(f"\nScan complete. Indexed {count} files.")
 
 def cmd_status(root_path: Path):
     """Displays archive status."""
