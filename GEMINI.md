@@ -79,7 +79,7 @@ Tests are written using the `unittest` framework.
 
 *   **Run all tests:**
     ```bash
-    python -m unittest discover tests
+    python3 -m unittest discover tests
     ```
 
 ### Continuous Integration
