@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+import sys
+from pathlib import Path
+
+# Add current directory to sys.path so we can import the archiver package
+sys.path.insert(0, str(Path(__file__).parent))
+
+from archiver.main import main
+
+if __name__ == "__main__":
+    main()
