@@ -74,38 +74,5 @@ class TestScanResume(unittest.TestCase):
 
         conn.close()
 
-    def test_scan_no_resume_wipes_db(self):
-        cmd_init(self.root_path)
-        cmd_scan(self.root_path, resume=False)
-
-        db_path = get_db_path(self.root_path)
-        conn = get_connection(db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM files WHERE path='file1.txt'")
-        id_orig = cursor.fetchone()[0]
-        conn.close()
-
-        # Run scan again WITHOUT resume (default rebuild)
-        cmd_scan(self.root_path, resume=False)
-
-        conn = get_connection(db_path)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM files WHERE path='file1.txt'")
-        id_new = cursor.fetchone()[0]
-        conn.close()
-
-        # IDs should differ because of auto-increment and delete/insert
-        # (Actually if we delete from sqlite_sequence, autoincrement resets to 1, so ID might be same if order is same.
-        # But we deleted sqlite_sequence. So ID should be 1 again. 
-        # If we didn't wipe, ID would persist or increment if we added more.
-        # Let's check that rowcount is still 2 and logic ran.)
-
-        # Better check: Verify output message "Rebuilding database" vs "Resuming" via captured output?
-        # Or just trust the logic. The ID check is slightly brittle if we reset sequence.
-        # If we reset sequence, ID becomes 1 again. 
-        # So id_orig == id_new == 1.
-
-        pass 
-
 if __name__ == '__main__':
     unittest.main()

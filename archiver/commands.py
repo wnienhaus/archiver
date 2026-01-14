@@ -223,6 +223,13 @@ def cmd_scan(root_path: Path, resume: bool = False):
         conn = get_connection(db_path)
         cursor = conn.cursor()
 
+        if not resume:
+            cursor.execute("SELECT count(*) FROM files")
+            if cursor.fetchone()[0] > 0:
+                print("Error: Database already contains data. Use --continue to resume or delete the database to restart.")
+                conn.close()
+                sys.exit(1)
+
         if resume:
             print("Resuming database scan...")
             cursor.execute("SELECT path FROM files")
