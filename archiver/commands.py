@@ -60,7 +60,11 @@ def cmd_add(root_path: Path, source: Path, dest_subdir: str, non_interactive: bo
         try:
             # 1. Calculate Hash & Size
             # print(f"Processing {src_file}...", end="", flush=True) # Too verbose?
-            file_size = src_file.stat().st_size
+            if src_file.is_symlink():
+                file_size = src_file.lstat().st_size
+            else:
+                file_size = src_file.stat().st_size
+            
             file_hash = calculate_file_hash(src_file)
 
             # 2. Check for duplicates
@@ -129,8 +133,8 @@ def cmd_add(root_path: Path, source: Path, dest_subdir: str, non_interactive: bo
                 
                 final_dest.parent.mkdir(parents=True, exist_ok=True)
                 
-                # Copy file
-                shutil.copy2(src_file, final_dest)
+                # Copy file (preserving symlinks)
+                shutil.copy2(src_file, final_dest, follow_symlinks=False)
                 
                 # Update DB
                 # Path stored relative to archive root
@@ -174,12 +178,16 @@ def cmd_verify(root_path: Path):
     for file_id, rel_path_str, expected_size, expected_hash in files:
         file_path = root_path / rel_path_str
         
-        if not file_path.exists():
+        if not file_path.exists() and not file_path.is_symlink():
             print(f"MISSING: {rel_path_str}")
             issues += 1
             continue
             
-        current_size = file_path.stat().st_size
+        if file_path.is_symlink():
+            current_size = file_path.lstat().st_size
+        else:
+            current_size = file_path.stat().st_size
+
         if current_size != expected_size:
             print(f"CORRUPTED (Size mismatch): {rel_path_str}")
             issues += 1
@@ -252,7 +260,11 @@ def cmd_scan(root_path: Path, resume: bool = False):
                     skipped_count += 1
                     continue
 
-                size = file_path.stat().st_size
+                if file_path.is_symlink():
+                    size = file_path.lstat().st_size
+                else:
+                    size = file_path.stat().st_size
+
                 file_hash = calculate_file_hash(file_path)
                 
                 cursor.execute(
