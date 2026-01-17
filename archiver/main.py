@@ -6,6 +6,7 @@ from .commands import cmd_init, cmd_add, cmd_verify, cmd_scan, cmd_status
 def main():
     parser = argparse.ArgumentParser(description="Local Archival CLI Tool")
     parser.add_argument("-C", "--directory", type=Path, default=Path.cwd(), help="Directory to operate on (default: current directory)")
+    parser.add_argument("-D", "--database", type=Path, default=None, help="Path to database file (default: .archive-index/archive.db inside directory)")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # archive init
@@ -31,18 +32,19 @@ def main():
 
     args = parser.parse_args()
     root_path = args.directory.resolve()
+    db_path_override = args.database.resolve() if args.database else None
 
     try:
         if args.command == "init":
-            cmd_init(root_path)
+            cmd_init(root_path, db_path_override)
         elif args.command == "add":
-            cmd_add(root_path, args.source, args.dest_subdir, args.non_interactive, args.accept_duplicates, args.skip_duplicates)
+            cmd_add(root_path, args.source, args.dest_subdir, args.non_interactive, args.accept_duplicates, args.skip_duplicates, db_path_override)
         elif args.command == "verify":
-            cmd_verify(root_path)
+            cmd_verify(root_path, db_path_override)
         elif args.command == "scan":
-            cmd_scan(root_path, args.resume)
+            cmd_scan(root_path, args.resume, db_path_override)
         elif args.command == "status":
-            cmd_status(root_path)
+            cmd_status(root_path, db_path_override)
     except KeyboardInterrupt:
         print("\nOperation cancelled by user.")
         sys.exit(1)

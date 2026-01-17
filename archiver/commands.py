@@ -9,7 +9,7 @@ import sqlite3
 from .database import get_db_path, init_db, get_connection, DB_DIR_NAME
 from .utils import calculate_file_hash, is_hidden
 
-def cmd_init(root_path: Path):
+def cmd_init(root_path: Path, db_path_override: Path = None):
     """Initializes the archive."""
     # Check for existing hidden files in root
     for item in root_path.iterdir():
@@ -18,16 +18,18 @@ def cmd_init(root_path: Path):
             print("The archive root must not contain hidden files (except .archive-index).")
             sys.exit(1)
 
-    db_path = get_db_path(root_path)
+    db_path = get_db_path(root_path, db_path_override)
     if db_path.exists():
         print("Archive already initialized.")
     else:
         init_db(db_path)
         print(f"Archive initialized at {root_path}")
+        if db_path_override:
+             print(f"Database located at {db_path}")
 
-def cmd_add(root_path: Path, source: Path, dest_subdir: str, non_interactive: bool, accept_duplicates: bool, skip_duplicates: bool):
+def cmd_add(root_path: Path, source: Path, dest_subdir: str, non_interactive: bool, accept_duplicates: bool, skip_duplicates: bool, db_path_override: Path = None):
     """Adds files to the archive."""
-    db_path = get_db_path(root_path)
+    db_path = get_db_path(root_path, db_path_override)
     if not db_path.exists():
         print("Error: Archive not initialized. Run 'archive init' first.")
         sys.exit(1)
@@ -159,9 +161,9 @@ def cmd_add(root_path: Path, source: Path, dest_subdir: str, non_interactive: bo
 
     conn.close()
 
-def cmd_verify(root_path: Path):
+def cmd_verify(root_path: Path, db_path_override: Path = None):
     """Verifies the integrity of archived files."""
-    db_path = get_db_path(root_path)
+    db_path = get_db_path(root_path, db_path_override)
     if not db_path.exists():
         print("Error: Archive not initialized.")
         sys.exit(1)
@@ -210,9 +212,9 @@ def cmd_verify(root_path: Path):
     else:
         print(f"Verification complete: {issues} issues found.")
 
-def cmd_scan(root_path: Path, resume: bool = False):
+def cmd_scan(root_path: Path, resume: bool = False, db_path_override: Path = None):
     """Rebuilds the database from disk."""
-    db_path = get_db_path(root_path)
+    db_path = get_db_path(root_path, db_path_override)
     
     existing_paths = set()
 
@@ -293,9 +295,9 @@ def cmd_scan(root_path: Path, resume: bool = False):
     else:
         print(f"\nScan complete. Indexed {count} files.")
 
-def cmd_status(root_path: Path):
+def cmd_status(root_path: Path, db_path_override: Path = None):
     """Displays archive status."""
-    db_path = get_db_path(root_path)
+    db_path = get_db_path(root_path, db_path_override)
     if not db_path.exists():
         print("Archive not initialized.")
         return

@@ -5,7 +5,9 @@ from pathlib import Path
 DB_DIR_NAME = ".archive-index"
 DB_NAME = "archive.db"
 
-def get_db_path(root_path: Path) -> Path:
+def get_db_path(root_path: Path, db_path_override: Path = None) -> Path:
+    if db_path_override:
+        return db_path_override
     return root_path / DB_DIR_NAME / DB_NAME
 
 def init_db(db_path: Path):
