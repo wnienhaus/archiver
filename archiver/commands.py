@@ -59,12 +59,7 @@ def cmd_add(root_path: Path, source: Path, dest_subdir: str, non_interactive: bo
     for src_file in files_to_process:
         try:
             # 1. Calculate Hash & Size
-            # print(f"Processing {src_file}...", end="", flush=True) # Too verbose?
-            if src_file.is_symlink():
-                file_size = src_file.lstat().st_size
-            else:
-                file_size = src_file.stat().st_size
-            
+            file_size = 0 if src_file.is_symlink() else src_file.stat().st_size
             file_hash = calculate_file_hash(src_file)
 
             # 2. Check for duplicates
@@ -183,10 +178,7 @@ def cmd_verify(root_path: Path):
             issues += 1
             continue
             
-        if file_path.is_symlink():
-            current_size = file_path.lstat().st_size
-        else:
-            current_size = file_path.stat().st_size
+        current_size = 0 if file_path.is_symlink() else file_path.stat().st_size
 
         if current_size != expected_size:
             print(f"CORRUPTED (Size mismatch): {rel_path_str}")
@@ -200,7 +192,7 @@ def cmd_verify(root_path: Path):
             continue
             
         # Update last_verified
-        cursor.execute("UPDATE files SET last_verified = CURRENT_TIMESTAMP WHERE id = ?", (file_id,))
+        #cursor.execute("UPDATE files SET last_verified = CURRENT_TIMESTAMP WHERE id = ?", (file_id,))
         # Commit periodically or at end? SQLite is fast enough for batch commit at end for this tool size probably,
         # but let's commit every file or batch to be safe against interruption?
         # Let's commit at the end for performance.
@@ -267,10 +259,7 @@ def cmd_scan(root_path: Path, resume: bool = False):
                     skipped_count += 1
                     continue
 
-                if file_path.is_symlink():
-                    size = file_path.lstat().st_size
-                else:
-                    size = file_path.stat().st_size
+                size = 0 if file_path.is_symlink() else file_path.stat().st_size
 
                 file_hash = calculate_file_hash(file_path)
                 
