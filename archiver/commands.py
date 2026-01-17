@@ -13,7 +13,7 @@ def cmd_init(root_path: Path):
     """Initializes the archive."""
     # Check for existing hidden files in root
     for item in root_path.iterdir():
-        if is_hidden(item) and item.name != DB_DIR_NAME:
+        if is_hidden(item) and item.name not in (DB_DIR_NAME, ".DS_Store"):
             print(f"Error: Hidden entry found in root: {item.name}")
             print("The archive root must not contain hidden files (except .archive-index).")
             sys.exit(1)
@@ -47,10 +47,15 @@ def cmd_add(root_path: Path, source: Path, dest_subdir: str, non_interactive: bo
 
     files_to_process = []
     if source.is_file():
-        files_to_process.append(source)
+        if source.name == ".DS_Store":
+            print(f"Skipping forbidden file: {source.name}")
+        else:
+            files_to_process.append(source)
     elif source.is_dir():
         for root, _, files in os.walk(source):
             for file in files:
+                if file == ".DS_Store":
+                    continue
                 files_to_process.append(Path(root) / file)
     else:
         print(f"Error: Source {source} does not exist.")
@@ -248,6 +253,8 @@ def cmd_scan(root_path: Path, resume: bool = False):
             dirs.remove(DB_DIR_NAME)
         
         for file in files:
+            if file == ".DS_Store":
+                continue
             file_path = Path(root) / file
             # "Include hidden files below root" -> so we don't skip hidden files here.
             

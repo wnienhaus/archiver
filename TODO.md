@@ -1,5 +1,5 @@
 # TODO list
-- [ ] never archive .DS_Store files
+- [x] never archive .DS_Store files
 - [ ] dont index dot files in root of archive (can be .spotlight, .fseventd, etc metadata directories)
 - [ ] improve performance: explicitly select WAL mode for sqlite: Execute PRAGMA journal_mode=WAL; and PRAGMA synchronous=NORMAL; when connecting.
 - [ ] improve performance: add index on path column of files table: CREATE INDEX idx_files_path ON files(path);
