@@ -8,3 +8,4 @@
 - [ ] add some kind of fix command, which given a list of files, adopts the new hash into the db (i.e. we're saying the file on disk is correct). possibly document how to manually fix this (how to calc the hash and update the DB).
 - [x] for symlinks, consider their size to always be 0, since it does not matter and the actual size is filesystem dependent.
 - [ ] treat empty files specially. their hash is e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 and their size is 0.
+- [x] on python 3.11 i get Path.exists() got an unexpected keyword argument 'follow_symlinks'
