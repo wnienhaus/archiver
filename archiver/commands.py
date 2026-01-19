@@ -128,7 +128,7 @@ def cmd_add(root_path: Path, source: Path, dest_subdir: str, non_interactive: bo
                 else:
                     final_dest = dest_dir_abs / src_file.name
 
-                if final_dest.exists():
+                if final_dest.exists(follow_symlinks=False):
                     print(f"Error: Destination file already exists: {final_dest}")
                     print("Skipping to avoid overwrite.")
                     continue
@@ -180,7 +180,7 @@ def cmd_verify(root_path: Path, db_path_override: Path = None):
     for file_id, rel_path_str, expected_size, expected_hash in files:
         file_path = root_path / rel_path_str
         
-        if not file_path.exists() and not file_path.is_symlink():
+        if not file_path.exists(follow_symlinks=False) and not file_path.is_symlink():
             print(f"MISSING: {rel_path_str}")
             issues += 1
             continue
