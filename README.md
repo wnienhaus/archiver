@@ -56,3 +56,8 @@ The tool is run via the `./archive` script.
 *   **Hidden Files:** Hidden files and directories (starting with `.`) are ignored if they are in the root of the archive to keep the top level clean. They are preserved if they are inside subdirectories.
 *   **System Files:** `.DS_Store` files are automatically ignored and never archived.
 *   **Symbolic Links:** Symlinks are preserved as links and are not followed (the content they point to is not copied). If a link points to a location outside the archive, it may be broken when accessing it from within the archive.
+
+
+## Note on AI
+
+*   The code in this repo was primarily written using Gemini CLI.
