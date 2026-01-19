@@ -1,6 +1,6 @@
-# Local Archiver
+# Personal Archiver
 
-A simple, append-only local file archiver designed for data integrity and safety. It stores files in a human-readable directory structure and maintains a SQLite index for duplicate detection and verification.
+A simple, append-only file archiver designed for efficient personal archive management. It stores files in a human-readable directory structure and maintains a SQLite index to ensure you never back up the same file twice (unless you want to). A verification option allows testing occasionally that data on the archive disk is still readable and still matches the original content.
 
 This tool is meant for maintaining an archive NOT a backup. The archive itself can then be backed up as necessary.
 
