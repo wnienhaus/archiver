@@ -178,27 +178,36 @@ def cmd_verify(root_path: Path, db_path_override: Path = None):
     cursor.execute("SELECT id, path, size, hash FROM files")
     files = cursor.fetchall()
     
-    print(f"Verifying {len(files)} files...")
+    total_files = len(files)
+    print(f"Verifying {total_files} files...")
     
     issues = 0
+    processed_count = 0
+    
     for file_id, rel_path_str, expected_size, expected_hash in files:
+        processed_count += 1
+        
+        if processed_count == 1 or processed_count == total_files or processed_count % 100 == 0:
+            percentage = (processed_count / total_files) * 100 if total_files > 0 else 0
+            print(f"Verifying: {processed_count}/{total_files} ({percentage:.1f}%)", end="\r")
+        
         file_path = root_path / rel_path_str
         
         if not file_path.exists(follow_symlinks=False) and not file_path.is_symlink():
-            print(f"MISSING: {rel_path_str}")
+            print(f"\nMISSING: {rel_path_str}")
             issues += 1
             continue
             
         current_size = 0 if file_path.is_symlink() else file_path.stat().st_size
 
         if current_size != expected_size:
-            print(f"CORRUPTED (Size mismatch): {rel_path_str}")
+            print(f"\nCORRUPTED (Size mismatch): {rel_path_str}")
             issues += 1
             continue
             
         current_hash = calculate_file_hash(file_path)
         if current_hash != expected_hash:
-            print(f"CORRUPTED (Hash mismatch): {rel_path_str}")
+            print(f"\nCORRUPTED (Hash mismatch): {rel_path_str}")
             issues += 1
             continue
             
@@ -211,6 +220,7 @@ def cmd_verify(root_path: Path, db_path_override: Path = None):
     conn.commit()
     conn.close()
     
+    print() # Clear progress line
     if issues == 0:
         print("Verification complete: All files OK.")
     else:
