@@ -133,14 +133,18 @@ def cmd_add(root_path: Path, source: Path, dest_subdir: str, non_interactive: bo
                     print("Skipping to avoid overwrite.")
                     continue
                 
+                # Path stored relative to archive root
+                rel_dest_path = final_dest.relative_to(root_path)
+
+                # Skip root dotfiles/dotdirs
+                if rel_dest_path.parts[0].startswith("."):
+                    print(f"Skipping root dotfile: {rel_dest_path}")
+                    continue
+
                 final_dest.parent.mkdir(parents=True, exist_ok=True)
                 
                 # Copy file (preserving symlinks)
                 shutil.copy2(src_file, final_dest, follow_symlinks=False)
-                
-                # Update DB
-                # Path stored relative to archive root
-                rel_dest_path = final_dest.relative_to(root_path)
                 
                 cursor.execute(
                     "INSERT INTO files (path, size, hash) VALUES (?, ?, ?)",
@@ -254,6 +258,14 @@ def cmd_scan(root_path: Path, resume: bool = False, db_path_override: Path = Non
         if DB_DIR_NAME in dirs:
             dirs.remove(DB_DIR_NAME)
         
+        # If in root, skip hidden directories and files
+        if Path(root) == root_path:
+             # Filter out hidden directories (e.g. .git, .config)
+             dirs[:] = [d for d in dirs if not d.startswith(".")]
+             
+             # Filter out hidden files
+             files = [f for f in files if not f.startswith(".")]
+
         for file in files:
             if file == ".DS_Store":
                 continue
