@@ -39,6 +39,7 @@ def init_db(db_path: Path):
     # Adding an index for performance as per common sense, though spec didn't explicitly ask for the CREATE INDEX statement, 
     # it implies it's an index.
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_hash_size ON hash_index(hash, size)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_files_path ON files(path)")
     
     conn.commit()
     return conn
@@ -48,3 +49,14 @@ def get_connection(db_path: Path) -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
     return conn
+
+def check_missing_indices(conn: sqlite3.Connection) -> list[str]:
+    """Checks for missing optional indices."""
+    cursor = conn.cursor()
+    missing = []
+    
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_files_path'")
+    if not cursor.fetchone():
+        missing.append("idx_files_path")
+        
+    return missing

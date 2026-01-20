@@ -6,8 +6,37 @@ from pathlib import Path
 from datetime import datetime
 import sqlite3
 
-from .database import get_db_path, init_db, get_connection, DB_DIR_NAME
+from .database import get_db_path, init_db, get_connection, DB_DIR_NAME, check_missing_indices
 from .utils import calculate_file_hash, is_hidden
+
+def _ensure_indices(conn: sqlite3.Connection, interactive: bool = True):
+    """Checks for missing indices and asks user to create them."""
+    missing = check_missing_indices(conn)
+    if not missing:
+        return
+
+    if "idx_files_path" in missing:
+        create = False
+        if interactive:
+            print("Notice: Performance index 'idx_files_path' is missing.")
+            try:
+                response = input("Do you want to create it now? [Y/n] ").lower()
+            except EOFError:
+                response = 'n'
+            if response in ('', 'y', 'yes'):
+                create = True
+        
+        if create:
+            print("Creating index idx_files_path...", end="", flush=True)
+            conn.execute("CREATE INDEX idx_files_path ON files(path)")
+            conn.commit()
+            print(" Done.")
+
+def _get_ready_connection(db_path: Path, interactive: bool = True) -> sqlite3.Connection:
+    """Gets a DB connection and ensures indices are present."""
+    conn = get_connection(db_path)
+    _ensure_indices(conn, interactive=interactive)
+    return conn
 
 def cmd_init(root_path: Path, db_path_override: Path = None):
     """Initializes the archive."""
@@ -44,7 +73,7 @@ def cmd_add(root_path: Path, source: Path, dest_subdir: str, non_interactive: bo
          print(f"Error: Cannot add files to reserved directory {DB_DIR_NAME}")
          sys.exit(1)
 
-    conn = get_connection(db_path)
+    conn = _get_ready_connection(db_path, interactive=not non_interactive)
     cursor = conn.cursor()
 
     files_to_process = []
@@ -172,7 +201,7 @@ def cmd_verify(root_path: Path, db_path_override: Path = None):
         print("Error: Archive not initialized.")
         sys.exit(1)
 
-    conn = get_connection(db_path)
+    conn = _get_ready_connection(db_path)
     cursor = conn.cursor()
     
     cursor.execute("SELECT id, path, size, hash FROM files")
@@ -233,7 +262,7 @@ def cmd_scan(root_path: Path, resume: bool = False, db_path_override: Path = Non
     existing_paths = set()
 
     if db_path.exists():
-        conn = get_connection(db_path)
+        conn = _get_ready_connection(db_path)
         cursor = conn.cursor()
 
         if not resume:
@@ -324,7 +353,7 @@ def cmd_status(root_path: Path, db_path_override: Path = None):
         print("Archive not initialized.")
         return
 
-    conn = get_connection(db_path)
+    conn = _get_ready_connection(db_path)
     cursor = conn.cursor()
     
     cursor.execute("SELECT COUNT(*), SUM(size) FROM files")
