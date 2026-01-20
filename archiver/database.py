@@ -13,7 +13,7 @@ def get_db_path(root_path: Path, db_path_override: Path = None) -> Path:
 def init_db(db_path: Path):
     """Initialize the database schema."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
+    conn = get_connection(db_path)
     cursor = conn.cursor()
     
     cursor.execute("""
@@ -44,4 +44,7 @@ def init_db(db_path: Path):
     return conn
 
 def get_connection(db_path: Path) -> sqlite3.Connection:
-    return sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    return conn
